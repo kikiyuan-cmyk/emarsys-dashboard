@@ -456,6 +456,71 @@ body {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* Download button */
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--accent-blue);
+  background: #eff6ff;
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.btn-download:hover {
+  background: var(--accent-blue);
+  color: #fff;
+}
+.btn-download svg { width: 14px; height: 14px; }
+
+/* Inline select */
+.inline-select {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: 'Noto Sans SC', sans-serif;
+  cursor: pointer;
+  outline: none;
+}
+.inline-select:focus { border-color: var(--accent-blue); }
+
+/* Growth cards */
+.growth-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.growth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.growth-card .g-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.growth-card .g-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.growth-card .g-value.positive { color: var(--accent-emerald); }
+.growth-card .g-value.negative { color: var(--accent-rose); }
+.growth-card .g-value.neutral { color: var(--accent-blue); }
+
 /* Responsive */
 @media (max-width: 1200px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -645,6 +710,7 @@ function render() {
       <button class="tab-btn active" onclick="switchTab('overview')">总览</button>
       <button class="tab-btn" onclick="switchTab('subscription')">订阅分析</button>
       <button class="tab-btn" onclick="switchTab('active')">活跃用户</button>
+      <button class="tab-btn" onclick="switchTab('growth')">增长分析</button>
       <button class="tab-btn" onclick="switchTab('table')">数据明细</button>
     </div>
 
@@ -724,7 +790,14 @@ function render() {
           <div class="chart-wrapper trend"><canvas id="chartActiveTrend"></canvas></div>
         </div>
       </div>
-      <div class="charts-row two fade-in" style="animation-delay:0.05s">
+      <div class="charts-row three fade-in" style="animation-delay:0.05s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">各区域用户构成 (活跃/订阅比例)</div>
+            <div class="chart-badge">比例对比</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartActiveRatio"></canvas></div>
+        </div>
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">区域活跃用户占比</div>
@@ -732,12 +805,64 @@ function render() {
           </div>
           <div class="chart-wrapper pie"><canvas id="chartActivePie"></canvas></div>
         </div>
+      </div>
+      <div class="charts-row two fade-in" style="animation-delay:0.1s">
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">活跃 vs 沉默（全球）</div>
             <div class="chart-badge">近7天对比</div>
           </div>
           <div class="chart-wrapper bar"><canvas id="chartActiveInactiveBar"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">各区域活跃率</div>
+            <div class="chart-badge">活跃/订阅 %</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartActiveRate"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 增长分析 Tab -->
+    <div class="tab-content" id="tab-growth">
+      <div class="growth-grid fade-in">
+        <div class="growth-card">
+          <div class="g-label">新增订阅人数 (区间内)</div>
+          <div class="g-value positive" id="gvNewSub">-</div>
+        </div>
+        <div class="growth-card">
+          <div class="g-label">总流失人数 (Unavailable by Email 增量)</div>
+          <div class="g-value negative" id="gvChurn">-</div>
+        </div>
+        <div class="growth-card">
+          <div class="g-label">净增订阅人数 (新增 - 流失)</div>
+          <div class="g-value neutral" id="gvNet">-</div>
+        </div>
+      </div>
+      <div class="charts-row full fade-in" style="animation-delay:0.05s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">订阅增长趋势（每日新增 / 流失 / 净增）</div>
+            <div class="chart-badge">柱状+折线</div>
+          </div>
+          <div class="chart-wrapper trend"><canvas id="chartGrowthTrend"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-row two fade-in" style="animation-delay:0.1s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">累计新增订阅 vs 累计流失</div>
+            <div class="chart-badge">面积图</div>
+          </div>
+          <div class="chart-wrapper trend"><canvas id="chartGrowthCumulative"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">流失构成（Unavailable by Email 明细）</div>
+            <div class="chart-badge">堆叠</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartChurnBreakdown"></canvas></div>
         </div>
       </div>
     </div>
@@ -747,7 +872,13 @@ function render() {
       <div class="table-card fade-in">
         <div class="chart-header">
           <div class="chart-title">每日数据明细</div>
-          <div class="chart-badge">共 ${filteredData.length} 条</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="chart-badge">共 ${filteredData.length} 条</div>
+            <button class="btn-download" onclick="downloadCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              下载 CSV
+            </button>
+          </div>
         </div>
         <div style="max-height:520px;overflow-y:auto;">
           <table class="data-table">
@@ -755,6 +886,7 @@ function render() {
               <tr>
                 <th>日期</th>
                 <th>全球订阅</th>
+                <th>流失人数</th>
                 <th>退订人数</th>
                 <th>亚太订阅</th>
                 <th>北美订阅</th>
@@ -774,6 +906,7 @@ function render() {
               <tr>
                 <td>${d.date}</td>
                 <td>${fmtFull(d.available_by_email)}</td>
+                <td>${fmtFull(d.unavailable_by_email)}</td>
                 <td>${fmtFull(d.no_opt_in)}</td>
                 <td>${fmtFull(d.apac_sub)}</td>
                 <td>${fmtFull(d.na_sub)}</td>
@@ -801,6 +934,7 @@ function render() {
   buildOverviewCharts();
   buildSubscriptionCharts();
   buildActiveCharts();
+  buildGrowthCharts();
 }
 
 // =========== Tab Switch ===========
@@ -1082,6 +1216,7 @@ function buildActiveCharts() {
   const labels = fData.map(d => d.date.slice(5));
   const latest = fData[fData.length - 1];
 
+  // Active Trend
   const ctx1 = document.getElementById('chartActiveTrend');
   if (ctx1) {
     charts.activeTrend = new Chart(ctx1, {
@@ -1100,6 +1235,34 @@ function buildActiveCharts() {
     });
   }
 
+  // Active/Subscription Ratio (horizontal bar)
+  const ctxRatio = document.getElementById('chartActiveRatio');
+  if (ctxRatio) {
+    const regions = ['亚太', '北美', '欧洲', '北美(除美国)'];
+    const subData = [latest.apac_sub, latest.na_sub, latest.eu_sub, latest.na_ex_us_sub];
+    const actData = [latest.apac_active, latest.na_active, latest.eu_active, latest.na_ex_us_active];
+    charts.activeRatio = new Chart(ctxRatio, {
+      type: 'bar',
+      data: {
+        labels: regions,
+        datasets: [
+          { label: '活跃用户', data: actData, backgroundColor: '#05966990', borderColor: '#059669', borderWidth: 1.5, borderRadius: 4, borderSkipped: false },
+          { label: '订阅用户(非活跃)', data: subData.map((s, i) => s && actData[i] ? s - actData[i] : null), backgroundColor: '#2563eb40', borderColor: '#2563eb', borderWidth: 1.5, borderRadius: 4, borderSkipped: false }
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        indexAxis: 'y',
+        plugins: { ...chartDefaults.plugins, legend: { ...chartDefaults.plugins.legend, position: 'top' } },
+        scales: {
+          x: { ...chartDefaults.scales.x, stacked: true },
+          y: { ...chartDefaults.scales.y, stacked: true, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // Active Pie
   const ctx2 = document.getElementById('chartActivePie');
   if (ctx2) {
     charts.activePie = new Chart(ctx2, {
@@ -1109,9 +1272,7 @@ function buildActiveCharts() {
         datasets: [{
           data: [latest.apac_active, latest.na_active, latest.eu_active, latest.na_ex_us_active],
           backgroundColor: ['#059669', '#0891b2', '#db2777', '#d97706'],
-          borderColor: '#ffffff',
-          borderWidth: 3,
-          hoverOffset: 6
+          borderColor: '#ffffff', borderWidth: 3, hoverOffset: 6
         }]
       },
       options: {
@@ -1124,6 +1285,7 @@ function buildActiveCharts() {
     });
   }
 
+  // Active vs Inactive
   const ctx3 = document.getElementById('chartActiveInactiveBar');
   if (ctx3) {
     const recent = fData.slice(-7);
@@ -1143,6 +1305,164 @@ function buildActiveCharts() {
       }
     });
   }
+
+  // Active Rate (%)
+  const ctxRate = document.getElementById('chartActiveRate');
+  if (ctxRate) {
+    const regions = ['亚太', '北美', '欧洲', '北美(除美国)'];
+    const rates = [
+      latest.apac_sub ? ((latest.apac_active / latest.apac_sub) * 100).toFixed(1) : 0,
+      latest.na_sub ? ((latest.na_active / latest.na_sub) * 100).toFixed(1) : 0,
+      latest.eu_sub ? ((latest.eu_active / latest.eu_sub) * 100).toFixed(1) : 0,
+      latest.na_ex_us_sub ? ((latest.na_ex_us_active / latest.na_ex_us_sub) * 100).toFixed(1) : 0
+    ];
+    charts.activeRate = new Chart(ctxRate, {
+      type: 'bar',
+      data: {
+        labels: regions,
+        datasets: [{
+          label: '活跃率 %',
+          data: rates,
+          backgroundColor: ['#05966970', '#0891b270', '#db277770', '#d9770670'],
+          borderColor: ['#059669', '#0891b2', '#db2777', '#d97706'],
+          borderWidth: 1.5, borderRadius: 6, borderSkipped: false
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: { ...chartDefaults.plugins, legend: { display: false } },
+        scales: {
+          ...chartDefaults.scales,
+          y: { ...chartDefaults.scales.y, beginAtZero: true, max: 100, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' } }
+        }
+      }
+    });
+  }
+}
+
+// =========== Growth Charts ===========
+function buildGrowthCharts() {
+  const gData = filteredData.filter(d => d.available_by_email != null);
+  if (gData.length < 2) return;
+
+  // Calculate daily deltas
+  const dailyDeltas = [];
+  for (let i = 1; i < gData.length; i++) {
+    const prev = gData[i - 1];
+    const cur = gData[i];
+    const newSub = (cur.available_by_email || 0) - (prev.available_by_email || 0);
+    const churn = (cur.unavailable_by_email || 0) - (prev.unavailable_by_email || 0);
+    const net = newSub - (churn > 0 ? churn : 0);
+    dailyDeltas.push({
+      date: cur.date,
+      newSub: newSub > 0 ? newSub : 0,
+      churn: churn > 0 ? churn : 0,
+      net: net
+    });
+  }
+
+  // Update KPI cards
+  const totalNewSub = dailyDeltas.reduce((s, d) => s + d.newSub, 0);
+  const totalChurn = dailyDeltas.reduce((s, d) => s + d.churn, 0);
+  const totalNet = totalNewSub - totalChurn;
+
+  const gvNew = document.getElementById('gvNewSub');
+  const gvChurn = document.getElementById('gvChurn');
+  const gvNet = document.getElementById('gvNet');
+  if (gvNew) gvNew.textContent = '+' + totalNewSub.toLocaleString();
+  if (gvChurn) gvChurn.textContent = '-' + totalChurn.toLocaleString();
+  if (gvNet) {
+    gvNet.textContent = (totalNet >= 0 ? '+' : '') + totalNet.toLocaleString();
+    gvNet.className = 'g-value ' + (totalNet >= 0 ? 'positive' : 'negative');
+  }
+
+  const labels = dailyDeltas.map(d => d.date.slice(5));
+
+  // Growth Trend (bar + line)
+  const ctx1 = document.getElementById('chartGrowthTrend');
+  if (ctx1) {
+    charts.growthTrend = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '每日新增', data: dailyDeltas.map(d => d.newSub), backgroundColor: '#05966960', borderColor: '#059669', borderWidth: 1, borderRadius: 3, borderSkipped: false, order: 2 },
+          { label: '每日流失', data: dailyDeltas.map(d => -d.churn), backgroundColor: '#dc262640', borderColor: '#dc2626', borderWidth: 1, borderRadius: 3, borderSkipped: false, order: 2 },
+          { label: '净增', data: dailyDeltas.map(d => d.net), type: 'line', borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2.5, pointRadius: gData.length > 40 ? 0 : 2, pointHoverRadius: 4, tension: 0.3, order: 1 }
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { ...chartDefaults.plugins, legend: { ...chartDefaults.plugins.legend, position: 'top' } }
+      }
+    });
+  }
+
+  // Cumulative
+  const ctx2 = document.getElementById('chartGrowthCumulative');
+  if (ctx2) {
+    let cumNew = 0, cumChurn = 0;
+    const cumNewArr = [], cumChurnArr = [];
+    for (const d of dailyDeltas) {
+      cumNew += d.newSub;
+      cumChurn += d.churn;
+      cumNewArr.push(cumNew);
+      cumChurnArr.push(cumChurn);
+    }
+    charts.growthCumulative = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          lineDataset('累计新增订阅', cumNewArr, '#059669', true),
+          lineDataset('累计流失', cumChurnArr, '#dc2626', true)
+        ]
+      },
+      options: { ...chartDefaults, interaction: { mode: 'index', intersect: false } }
+    });
+  }
+
+  // Churn Breakdown
+  const ctx3 = document.getElementById('chartChurnBreakdown');
+  if (ctx3) {
+    const recent = gData.slice(-7);
+    charts.churnBreakdown = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: recent.map(d => d.date.slice(5)),
+        datasets: [
+          { label: 'No opt-in', data: recent.map(d => d.no_opt_in || 0), backgroundColor: '#7c3aed60', borderColor: '#7c3aed', borderWidth: 1.5, borderRadius: 3, borderSkipped: false, stack: 's1' },
+          { label: 'Invalid email', data: recent.map(d => d.invalid_email || 0), backgroundColor: '#dc262640', borderColor: '#dc2626', borderWidth: 1.5, borderRadius: 3, borderSkipped: false, stack: 's1' },
+          { label: 'Missing email', data: recent.map(d => d.missing_email || 0), backgroundColor: '#d9770640', borderColor: '#d97706', borderWidth: 1.5, borderRadius: 3, borderSkipped: false, stack: 's1' }
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: { ...chartDefaults.plugins, legend: { ...chartDefaults.plugins.legend, position: 'top' } },
+        scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: true }, y: { ...chartDefaults.scales.y, stacked: true, beginAtZero: true } }
+      }
+    });
+  }
+}
+
+// =========== CSV Download ===========
+function downloadCSV() {
+  const headers = ['日期','全球订阅','流失人数','退订人数','亚太订阅','北美订阅','欧洲订阅','北美(除美)订阅','潜在用户','沉默用户','亚太活跃','北美活跃','欧洲活跃','北美(除美)活跃','全球活跃'];
+  const keys = ['date','available_by_email','unavailable_by_email','no_opt_in','apac_sub','na_sub','eu_sub','na_ex_us_sub','leads','inactive_lead','apac_active','na_active','eu_active','na_ex_us_active','global_active'];
+
+  let csv = '\uFEFF' + headers.join(',') + '\n';
+  for (const d of filteredData) {
+    csv += keys.map(k => d[k] != null ? d[k] : '').join(',') + '\n';
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `emarsys_data_${filteredData[0]?.date || 'export'}_to_${filteredData[filteredData.length-1]?.date || ''}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // =========== Init ===========
