@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emarsys Data Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: #1a1f35;
+  --bg-card-hover: #1f2541;
+  --border: #2a3050;
+  --border-glow: #3b82f620;
+  --text-primary: #f0f4fc;
+  --text-secondary: #8b95b0;
+  --text-muted: #5a6580;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+  --accent-violet: #8b5cf6;
+  --accent-orange: #f97316;
+  --accent-pink: #ec4899;
+  --gradient-blue: linear-gradient(135deg, #3b82f6, #06b6d4);
+  --gradient-emerald: linear-gradient(135deg, #10b981, #06b6d4);
+  --gradient-amber: linear-gradient(135deg, #f59e0b, #f97316);
+  --gradient-rose: linear-gradient(135deg, #f43f5e, #ec4899);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 24px rgba(59,130,246,0.15);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 10%, rgba(59,130,246,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 500px at 80% 80%, rgba(139,92,246,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 300px at 50% 50%, rgba(6,182,212,0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app { position: relative; z-index: 1; }
+
+/* Header */
+.header {
+  padding: 24px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  background: rgba(10,14,26,0.8);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  width: 40px; height: 40px;
+  background: var(--gradient-blue);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+}
+
+.header-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f0f4fc, #8b95b0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 16px;
+}
+
+.date-range label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-range input[type="date"] {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.date-range input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+.date-range-sep {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.quick-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.quick-filter {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.quick-filter:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.quick-filter.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(59,130,246,0.3);
+}
+
+/* Main Layout */
+.main {
+  padding: 28px 40px 60px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* KPI Cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.kpi-card:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
+
+.kpi-card.blue::before { background: var(--gradient-blue); }
+.kpi-card.emerald::before { background: var(--gradient-emerald); }
+.kpi-card.amber::before { background: var(--gradient-amber); }
+.kpi-card.rose::before { background: var(--gradient-rose); }
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+
+.kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.kpi-card.blue .kpi-value { color: var(--accent-blue); }
+.kpi-card.emerald .kpi-value { color: var(--accent-emerald); }
+.kpi-card.amber .kpi-value { color: var(--accent-amber); }
+.kpi-card.rose .kpi-value { color: var(--accent-rose); }
+
+.kpi-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.kpi-change.up {
+  color: var(--accent-emerald);
+  background: rgba(16,185,129,0.1);
+}
+
+.kpi-change.down {
+  color: var(--accent-rose);
+  background: rgba(244,63,94,0.1);
+}
+
+.kpi-change-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+/* Charts Grid */
+.charts-row {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.charts-row.two { grid-template-columns: 1fr 1fr; }
+.charts-row.three { grid-template-columns: 2fr 1fr; }
+.charts-row.full { grid-template-columns: 1fr; }
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  transition: all 0.3s;
+}
+
+.chart-card:hover {
+  border-color: rgba(59,130,246,0.15);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chart-badge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(59,130,246,0.08);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.chart-wrapper.trend { height: 300px; }
+.chart-wrapper.pie { height: 300px; }
+.chart-wrapper.bar { height: 300px; }
+.chart-wrapper.small { height: 240px; }
+
+/* Data Table */
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.data-table thead th {
+  background: rgba(59,130,246,0.06);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+.data-table thead th:first-child {
+  text-align: left;
+  border-radius: 8px 0 0 0;
+}
+
+.data-table thead th:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.data-table tbody td {
+  padding: 11px 14px;
+  text-align: right;
+  border-bottom: 1px solid rgba(42,48,80,0.4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: background 0.15s;
+}
+
+.data-table tbody td:first-child {
+  text-align: left;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.data-table tbody tr:hover td {
+  background: rgba(59,130,246,0.04);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Last Updated */
+.last-updated {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.last-updated span {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Fade in animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+/* Section titles */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 28px 0 14px;
+  padding-left: 4px;
+}
+
+.section-title:first-of-type { margin-top: 0; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-row.two, .charts-row.three { grid-template-columns: 1fr; }
+  .header { padding: 16px 20px; flex-wrap: wrap; gap: 12px; }
+  .main { padding: 20px; }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .header-right { flex-wrap: wrap; }
+  .kpi-value { font-size: 22px; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Tab navigation */
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.tab-btn:hover { color: var(--text-secondary); }
+
+.tab-btn.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">E</div>
+      <div>
+        <div class="header-title">Emarsys Data Dashboard</div>
+        <div class="header-subtitle">Email Marketing Analytics</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="quick-filters">
+        <button class="quick-filter" onclick="setRange(7)">7D</button>
+        <button class="quick-filter" onclick="setRange(14)">14D</button>
+        <button class="quick-filter active" onclick="setRange(30)">30D</button>
+        <button class="quick-filter" onclick="setRange(0)">All</button>
+      </div>
+      <div class="date-range">
+        <label>From</label>
+        <input type="date" id="dateFrom">
+        <span class="date-range-sep">/</span>
+        <label>To</label>
+        <input type="date" id="dateTo">
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main" id="mainContent">
+    <div class="loading" id="loadingState">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading dashboard data...</div>
+    </div>
+  </main>
+</div>
+
+<script>
+// =========== State ===========
+let allData = [];
+let filteredData = [];
+let charts = {};
+
+// =========== Data Load ===========
+async function loadData() {
+  try {
+    const resp = await fetch('data.json');
+    allData = await resp.json();
+    allData.sort((a, b) => a.date.localeCompare(b.date));
+    initDateRange();
+    filterData();
+    render();
+  } catch (e) {
+    document.getElementById('loadingState').innerHTML =
+      `<div style="color:var(--accent-rose);">Failed to load data.json</div>
+       <div style="color:var(--text-muted);font-size:13px;margin-top:8px;">${e.message}</div>`;
+  }
+}
+
+// =========== Date Filtering ===========
+function initDateRange() {
+  const dates = allData.map(d => d.date);
+  document.getElementById('dateFrom').value = dates[0];
+  document.getElementById('dateTo').value = dates[dates.length - 1];
+  document.getElementById('dateFrom').addEventListener('change', () => { clearActiveFilter(); filterData(); render(); });
+  document.getElementById('dateTo').addEventListener('change', () => { clearActiveFilter(); filterData(); render(); });
+}
+
+function setRange(days) {
+  document.querySelectorAll('.quick-filter').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const dates = allData.map(d => d.date);
+  const endDate = dates[dates.length - 1];
+  if (days === 0) {
+    document.getElementById('dateFrom').value = dates[0];
+  } else {
+    const d = new Date(endDate);
+    d.setDate(d.getDate() - days + 1);
+    document.getElementById('dateFrom').value = d.toISOString().split('T')[0];
+  }
+  document.getElementById('dateTo').value = endDate;
+  filterData();
+  render();
+}
+
+function clearActiveFilter() {
+  document.querySelectorAll('.quick-filter').forEach(b => b.classList.remove('active'));
+}
+
+function filterData() {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  filteredData = allData.filter(d => d.date >= from && d.date <= to);
+}
+
+// =========== Formatting ===========
+function fmt(n) {
+  if (n == null) return 'N/A';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
+
+function fmtFull(n) {
+  if (n == null) return 'N/A';
+  return n.toLocaleString();
+}
+
+function calcChange(data, key) {
+  if (data.length < 2) return null;
+  const cur = data[data.length - 1][key];
+  const prev = data[data.length - 2][key];
+  if (!cur || !prev) return null;
+  const diff = cur - prev;
+  const pct = ((diff / prev) * 100).toFixed(2);
+  return { diff, pct, up: diff >= 0 };
+}
+
+function calcPeriodChange(data, key) {
+  if (data.length < 2) return null;
+  const cur = data[data.length - 1][key];
+  const first = data[0][key];
+  if (!cur || !first) return null;
+  const diff = cur - first;
+  const pct = ((diff / first) * 100).toFixed(2);
+  return { diff, pct, up: diff >= 0 };
+}
+
+// =========== Render ===========
+function render() {
+  if (!filteredData.length) return;
+  const latest = filteredData[filteredData.length - 1];
+
+  // Destroy old charts
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const main = document.getElementById('mainContent');
+
+  const changeEmail = calcPeriodChange(filteredData, 'available_by_email');
+  const changeActive = calcPeriodChange(filteredData, 'global_active');
+  const changeLeads = calcPeriodChange(filteredData, 'leads');
+  const changeInactive = calcPeriodChange(filteredData, 'inactive_lead');
+
+  main.innerHTML = `
+    <!-- KPI Cards -->
+    <div class="kpi-grid fade-in" style="animation-delay:0.05s">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Global Subscribers</div>
+        <div class="kpi-value">${fmt(latest.available_by_email)}</div>
+        ${changeEmail ? `<span class="kpi-change ${changeEmail.up ? 'up' : 'down'}">${changeEmail.up ? '&#9650;' : '&#9660;'} ${changeEmail.pct}%</span><span class="kpi-change-label">period</span>` : ''}
+      </div>
+      <div class="kpi-card emerald">
+        <div class="kpi-label">Global Active Users</div>
+        <div class="kpi-value">${fmt(latest.global_active)}</div>
+        ${changeActive ? `<span class="kpi-change ${changeActive.up ? 'up' : 'down'}">${changeActive.up ? '&#9650;' : '&#9660;'} ${changeActive.pct}%</span><span class="kpi-change-label">period</span>` : ''}
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Global Leads</div>
+        <div class="kpi-value">${fmt(latest.leads)}</div>
+        ${changeLeads ? `<span class="kpi-change ${changeLeads.up ? 'up' : 'down'}">${changeLeads.up ? '&#9650;' : '&#9660;'} ${changeLeads.pct}%</span><span class="kpi-change-label">period</span>` : ''}
+      </div>
+      <div class="kpi-card rose">
+        <div class="kpi-label">Inactive / No Opt-in</div>
+        <div class="kpi-value">${fmt(latest.inactive_lead)}</div>
+        ${changeInactive ? `<span class="kpi-change ${changeInactive.up ? 'down' : 'up'}">${changeInactive.up ? '&#9650;' : '&#9660;'} ${changeInactive.pct}%</span><span class="kpi-change-label">period</span>` : ''}
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-nav fade-in" style="animation-delay:0.1s">
+      <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+      <button class="tab-btn" onclick="switchTab('subscription')">Subscription</button>
+      <button class="tab-btn" onclick="switchTab('active')">Active Users</button>
+      <button class="tab-btn" onclick="switchTab('table')">Data Table</button>
+    </div>
+
+    <!-- Overview Tab -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="charts-row three fade-in" style="animation-delay:0.15s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Global Subscriber Trend</div>
+            <div class="chart-badge">Available by Email</div>
+          </div>
+          <div class="chart-wrapper trend"><canvas id="chartGlobalTrend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">User Composition</div>
+            <div class="chart-badge">Latest</div>
+          </div>
+          <div class="chart-wrapper pie"><canvas id="chartUserComposition"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-row two fade-in" style="animation-delay:0.2s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Regional Subscribers</div>
+            <div class="chart-badge">Bar Comparison</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartRegionalBar"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Regional Active Users</div>
+            <div class="chart-badge">Bar Comparison</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartActiveBar"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscription Tab -->
+    <div class="tab-content" id="tab-subscription">
+      <div class="charts-row full fade-in">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Subscription Trend by Region</div>
+            <div class="chart-badge">Multi-line</div>
+          </div>
+          <div class="chart-wrapper trend"><canvas id="chartSubTrend"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-row two fade-in" style="animation-delay:0.05s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Regional Subscription Share</div>
+            <div class="chart-badge">Doughnut</div>
+          </div>
+          <div class="chart-wrapper pie"><canvas id="chartSubPie"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Opt-in vs No Opt-in</div>
+            <div class="chart-badge">Stacked</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartOptInBar"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Tab -->
+    <div class="tab-content" id="tab-active">
+      <div class="charts-row full fade-in">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Active Users Trend by Region</div>
+            <div class="chart-badge">Multi-line</div>
+          </div>
+          <div class="chart-wrapper trend"><canvas id="chartActiveTrend"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-row two fade-in" style="animation-delay:0.05s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Regional Active User Share</div>
+            <div class="chart-badge">Doughnut</div>
+          </div>
+          <div class="chart-wrapper pie"><canvas id="chartActivePie"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Active vs Inactive (Global)</div>
+            <div class="chart-badge">Stacked Bar</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartActiveInactiveBar"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Tab -->
+    <div class="tab-content" id="tab-table">
+      <div class="table-card fade-in">
+        <div class="chart-header">
+          <div class="chart-title">Daily Data Table</div>
+          <div class="chart-badge">${filteredData.length} records</div>
+        </div>
+        <div style="max-height:500px;overflow-y:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Avail. Email</th>
+                <th>No Opt-in</th>
+                <th>APAC Sub</th>
+                <th>NA Sub</th>
+                <th>EU Sub</th>
+                <th>NA(ex US)</th>
+                <th>Leads</th>
+                <th>Inactive</th>
+                <th>APAC Act</th>
+                <th>NA Act</th>
+                <th>EU Act</th>
+                <th>NA(ex US) Act</th>
+                <th>Global Act</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${[...filteredData].reverse().map(d => `
+              <tr>
+                <td>${d.date}</td>
+                <td>${fmtFull(d.available_by_email)}</td>
+                <td>${fmtFull(d.no_opt_in)}</td>
+                <td>${fmtFull(d.apac_sub)}</td>
+                <td>${fmtFull(d.na_sub)}</td>
+                <td>${fmtFull(d.eu_sub)}</td>
+                <td>${fmtFull(d.na_ex_us_sub)}</td>
+                <td>${fmtFull(d.leads)}</td>
+                <td>${fmtFull(d.inactive_lead)}</td>
+                <td>${fmtFull(d.apac_active)}</td>
+                <td>${fmtFull(d.na_active)}</td>
+                <td>${fmtFull(d.eu_active)}</td>
+                <td>${fmtFull(d.na_ex_us_active)}</td>
+                <td>${fmtFull(d.global_active)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="last-updated fade-in" style="animation-delay:0.3s">
+      Last data point: <span>${latest.date}</span> &mdash; ${filteredData.length} days displayed
+    </div>
+  `;
+
+  // Build charts
+  buildOverviewCharts();
+  buildSubscriptionCharts();
+  buildActiveCharts();
+}
+
+// =========== Tab Switch ===========
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+// =========== Chart Defaults ===========
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: {
+        color: '#8b95b0',
+        font: { family: 'DM Sans', size: 11, weight: '500' },
+        boxWidth: 12,
+        boxHeight: 12,
+        borderRadius: 3,
+        useBorderRadius: true,
+        padding: 16
+      }
+    },
+    tooltip: {
+      backgroundColor: '#1a1f35',
+      titleColor: '#f0f4fc',
+      bodyColor: '#8b95b0',
+      borderColor: '#2a3050',
+      borderWidth: 1,
+      padding: 12,
+      titleFont: { family: 'DM Sans', size: 13, weight: '600' },
+      bodyFont: { family: 'JetBrains Mono', size: 12 },
+      cornerRadius: 10,
+      displayColors: true,
+      callbacks: {
+        label: ctx => {
+          const v = ctx.parsed.y ?? ctx.parsed;
+          return ` ${ctx.dataset.label || ctx.label}: ${typeof v === 'number' ? v.toLocaleString() : v}`;
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(42,48,80,0.3)', drawBorder: false },
+      ticks: { color: '#5a6580', font: { family: 'JetBrains Mono', size: 10 }, maxRotation: 45 },
+      border: { display: false }
+    },
+    y: {
+      grid: { color: 'rgba(42,48,80,0.3)', drawBorder: false },
+      ticks: {
+        color: '#5a6580',
+        font: { family: 'JetBrains Mono', size: 10 },
+        callback: v => {
+          if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+          if (v >= 1e3) return (v / 1e3).toFixed(0) + 'K';
+          return v;
+        }
+      },
+      border: { display: false }
+    }
+  }
+};
+
+function lineDataset(label, data, color, fill = false) {
+  return {
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: fill ? color + '18' : color,
+    borderWidth: 2.5,
+    pointRadius: filteredData.length > 20 ? 0 : 3,
+    pointHoverRadius: 5,
+    pointBackgroundColor: color,
+    pointBorderColor: '#1a1f35',
+    pointBorderWidth: 2,
+    tension: 0.35,
+    fill
+  };
+}
+
+// =========== Overview Charts ===========
+function buildOverviewCharts() {
+  const labels = filteredData.map(d => d.date.slice(5));
+  const latest = filteredData[filteredData.length - 1];
+
+  // Global Trend (dual axis: subscribers + active)
+  const ctx1 = document.getElementById('chartGlobalTrend');
+  if (ctx1) {
+    charts.globalTrend = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          lineDataset('Subscribers', filteredData.map(d => d.available_by_email), '#3b82f6', true),
+          lineDataset('Active Users', filteredData.map(d => d.global_active), '#10b981'),
+          lineDataset('Inactive', filteredData.map(d => d.inactive_lead), '#f43f5e')
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { ...chartDefaults.plugins }
+      }
+    });
+  }
+
+  // User Composition Doughnut
+  const ctx2 = document.getElementById('chartUserComposition');
+  if (ctx2) {
+    charts.userComp = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Active Users', 'Inactive Users', 'Leads', 'No Opt-in'],
+        datasets: [{
+          data: [latest.global_active, latest.inactive_lead, latest.leads, latest.no_opt_in],
+          backgroundColor: ['#10b981', '#f43f5e', '#f59e0b', '#6366f1'],
+          borderColor: '#1a1f35',
+          borderWidth: 3,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#8b95b0',
+              font: { family: 'DM Sans', size: 11 },
+              padding: 16,
+              boxWidth: 12,
+              boxHeight: 12,
+              borderRadius: 3,
+              useBorderRadius: true
+            }
+          },
+          tooltip: chartDefaults.plugins.tooltip
+        }
+      }
+    });
+  }
+
+  // Regional Subscribers Bar
+  const ctx3 = document.getElementById('chartRegionalBar');
+  if (ctx3) {
+    charts.regBar = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: ['APAC', 'North America', 'Europe', 'NA (ex US)'],
+        datasets: [{
+          label: 'Subscribers',
+          data: [latest.apac_sub, latest.na_sub, latest.eu_sub, latest.na_ex_us_sub],
+          backgroundColor: ['#3b82f680', '#06b6d480', '#8b5cf680', '#f59e0b80'],
+          borderColor: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b'],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { display: false }
+        },
+        scales: {
+          ...chartDefaults.scales,
+          y: {
+            ...chartDefaults.scales.y,
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  // Regional Active Bar
+  const ctx4 = document.getElementById('chartActiveBar');
+  if (ctx4) {
+    charts.activeBar = new Chart(ctx4, {
+      type: 'bar',
+      data: {
+        labels: ['APAC', 'North America', 'Europe', 'NA (ex US)'],
+        datasets: [{
+          label: 'Active Users',
+          data: [latest.apac_active, latest.na_active, latest.eu_active, latest.na_ex_us_active],
+          backgroundColor: ['#10b98180', '#06b6d480', '#ec489980', '#f5990b80'],
+          borderColor: ['#10b981', '#06b6d4', '#ec4899', '#f59e0b'],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { display: false }
+        },
+        scales: {
+          ...chartDefaults.scales,
+          y: {
+            ...chartDefaults.scales.y,
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+}
+
+// =========== Subscription Charts ===========
+function buildSubscriptionCharts() {
+  const labels = filteredData.map(d => d.date.slice(5));
+  const latest = filteredData[filteredData.length - 1];
+
+  // Subscription Trend Multi-line
+  const ctx1 = document.getElementById('chartSubTrend');
+  if (ctx1) {
+    charts.subTrend = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          lineDataset('APAC', filteredData.map(d => d.apac_sub), '#3b82f6'),
+          lineDataset('North America', filteredData.map(d => d.na_sub), '#06b6d4'),
+          lineDataset('Europe', filteredData.map(d => d.eu_sub), '#8b5cf6'),
+          lineDataset('NA (ex US)', filteredData.map(d => d.na_ex_us_sub), '#f59e0b')
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+  }
+
+  // Subscription Pie
+  const ctx2 = document.getElementById('chartSubPie');
+  if (ctx2) {
+    charts.subPie = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['APAC', 'North America', 'Europe', 'NA (ex US)'],
+        datasets: [{
+          data: [latest.apac_sub, latest.na_sub, latest.eu_sub, latest.na_ex_us_sub],
+          backgroundColor: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b'],
+          borderColor: '#1a1f35',
+          borderWidth: 3,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '58%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#8b95b0',
+              font: { family: 'DM Sans', size: 11 },
+              padding: 14,
+              boxWidth: 12,
+              boxHeight: 12,
+              borderRadius: 3,
+              useBorderRadius: true
+            }
+          },
+          tooltip: chartDefaults.plugins.tooltip
+        }
+      }
+    });
+  }
+
+  // Opt-in vs No Opt-in stacked bar (latest 7 days shown)
+  const ctx3 = document.getElementById('chartOptInBar');
+  if (ctx3) {
+    const recent = filteredData.slice(-7);
+    charts.optInBar = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: recent.map(d => d.date.slice(5)),
+        datasets: [
+          {
+            label: 'Available by Email',
+            data: recent.map(d => d.available_by_email),
+            backgroundColor: '#3b82f660',
+            borderColor: '#3b82f6',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            borderSkipped: false
+          },
+          {
+            label: 'No Opt-in',
+            data: recent.map(d => d.no_opt_in),
+            backgroundColor: '#f43f5e60',
+            borderColor: '#f43f5e',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            borderSkipped: false
+          }
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { ...chartDefaults.plugins.legend, position: 'top' }
+        },
+        scales: {
+          ...chartDefaults.scales,
+          x: { ...chartDefaults.scales.x, stacked: false },
+          y: { ...chartDefaults.scales.y, beginAtZero: false }
+        }
+      }
+    });
+  }
+}
+
+// =========== Active Charts ===========
+function buildActiveCharts() {
+  const labels = filteredData.map(d => d.date.slice(5));
+  const latest = filteredData[filteredData.length - 1];
+
+  // Active Trend Multi-line
+  const ctx1 = document.getElementById('chartActiveTrend');
+  if (ctx1) {
+    charts.activeTrend = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          lineDataset('APAC Active', filteredData.map(d => d.apac_active), '#10b981'),
+          lineDataset('NA Active', filteredData.map(d => d.na_active), '#06b6d4'),
+          lineDataset('EU Active', filteredData.map(d => d.eu_active), '#ec4899'),
+          lineDataset('NA (ex US) Active', filteredData.map(d => d.na_ex_us_active), '#f59e0b'),
+          lineDataset('Global Active', filteredData.map(d => d.global_active), '#8b5cf6')
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+  }
+
+  // Active Pie
+  const ctx2 = document.getElementById('chartActivePie');
+  if (ctx2) {
+    charts.activePie = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['APAC', 'North America', 'Europe', 'NA (ex US)'],
+        datasets: [{
+          data: [latest.apac_active, latest.na_active, latest.eu_active, latest.na_ex_us_active],
+          backgroundColor: ['#10b981', '#06b6d4', '#ec4899', '#f59e0b'],
+          borderColor: '#1a1f35',
+          borderWidth: 3,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '58%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#8b95b0',
+              font: { family: 'DM Sans', size: 11 },
+              padding: 14,
+              boxWidth: 12, boxHeight: 12,
+              borderRadius: 3, useBorderRadius: true
+            }
+          },
+          tooltip: chartDefaults.plugins.tooltip
+        }
+      }
+    });
+  }
+
+  // Active vs Inactive stacked bar (recent 7 days)
+  const ctx3 = document.getElementById('chartActiveInactiveBar');
+  if (ctx3) {
+    const recent = filteredData.slice(-7);
+    charts.activeInactiveBar = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: recent.map(d => d.date.slice(5)),
+        datasets: [
+          {
+            label: 'Global Active',
+            data: recent.map(d => d.global_active),
+            backgroundColor: '#10b98170',
+            borderColor: '#10b981',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            borderSkipped: false,
+            stack: 'stack0'
+          },
+          {
+            label: 'Inactive Lead',
+            data: recent.map(d => d.inactive_lead),
+            backgroundColor: '#f43f5e50',
+            borderColor: '#f43f5e',
+            borderWidth: 1.5,
+            borderRadius: 4,
+            borderSkipped: false,
+            stack: 'stack1'
+          }
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { ...chartDefaults.plugins.legend, position: 'top' }
+        },
+        scales: {
+          ...chartDefaults.scales,
+          y: { ...chartDefaults.scales.y, beginAtZero: false }
+        }
+      }
+    });
+  }
+}
+
+// =========== Init ===========
+loadData();
+</script>
+</body>
+</html>
