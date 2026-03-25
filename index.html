@@ -790,14 +790,21 @@ function render() {
           <div class="chart-wrapper trend"><canvas id="chartActiveTrend"></canvas></div>
         </div>
       </div>
-      <div class="charts-row three fade-in" style="animation-delay:0.05s">
+      <div class="charts-row full fade-in" style="animation-delay:0.05s">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title">各区域用户构成 (活跃/订阅比例)</div>
-            <div class="chart-badge">比例对比</div>
+            <div class="chart-title">各区域用户构成（活跃 vs 非活跃订阅）</div>
+            <div class="chart-badge">环形图</div>
           </div>
-          <div class="chart-wrapper bar"><canvas id="chartActiveRatio"></canvas></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div class="chart-wrapper pie"><canvas id="chartRatioAPAC"></canvas></div>
+            <div class="chart-wrapper pie"><canvas id="chartRatioNA"></canvas></div>
+            <div class="chart-wrapper pie"><canvas id="chartRatioEU"></canvas></div>
+            <div class="chart-wrapper pie"><canvas id="chartRatioNAex"></canvas></div>
+          </div>
         </div>
+      </div>
+      <div class="charts-row two fade-in" style="animation-delay:0.08s">
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">区域活跃用户占比</div>
@@ -805,21 +812,21 @@ function render() {
           </div>
           <div class="chart-wrapper pie"><canvas id="chartActivePie"></canvas></div>
         </div>
-      </div>
-      <div class="charts-row two fade-in" style="animation-delay:0.1s">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">活跃 vs 沉默（全球）</div>
-            <div class="chart-badge">近7天对比</div>
-          </div>
-          <div class="chart-wrapper bar"><canvas id="chartActiveInactiveBar"></canvas></div>
-        </div>
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">各区域活跃率</div>
             <div class="chart-badge">活跃/订阅 %</div>
           </div>
           <div class="chart-wrapper bar"><canvas id="chartActiveRate"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-row full fade-in" style="animation-delay:0.12s">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">活跃 vs 沉默（全球）</div>
+            <div class="chart-badge">近7天对比</div>
+          </div>
+          <div class="chart-wrapper bar"><canvas id="chartActiveInactiveBar"></canvas></div>
         </div>
       </div>
     </div>
@@ -1235,31 +1242,57 @@ function buildActiveCharts() {
     });
   }
 
-  // Active/Subscription Ratio (horizontal bar)
-  const ctxRatio = document.getElementById('chartActiveRatio');
-  if (ctxRatio) {
-    const regions = ['亚太', '北美', '欧洲', '北美(除美国)'];
-    const subData = [latest.apac_sub, latest.na_sub, latest.eu_sub, latest.na_ex_us_sub];
-    const actData = [latest.apac_active, latest.na_active, latest.eu_active, latest.na_ex_us_active];
-    charts.activeRatio = new Chart(ctxRatio, {
-      type: 'bar',
-      data: {
-        labels: regions,
-        datasets: [
-          { label: '活跃用户', data: actData, backgroundColor: '#05966990', borderColor: '#059669', borderWidth: 1.5, borderRadius: 4, borderSkipped: false },
-          { label: '订阅用户(非活跃)', data: subData.map((s, i) => s && actData[i] ? s - actData[i] : null), backgroundColor: '#2563eb40', borderColor: '#2563eb', borderWidth: 1.5, borderRadius: 4, borderSkipped: false }
-        ]
-      },
-      options: {
-        ...chartDefaults,
-        indexAxis: 'y',
-        plugins: { ...chartDefaults.plugins, legend: { ...chartDefaults.plugins.legend, position: 'top' } },
-        scales: {
-          x: { ...chartDefaults.scales.x, stacked: true },
-          y: { ...chartDefaults.scales.y, stacked: true, beginAtZero: true }
-        }
-      }
-    });
+  // Active/Subscription Ratio — 4 doughnut charts per region
+  const regionsCfg = [
+    { id: 'chartRatioAPAC', label: '亚太', active: latest.apac_active, sub: latest.apac_sub, color: '#059669' },
+    { id: 'chartRatioNA', label: '北美', active: latest.na_active, sub: latest.na_sub, color: '#0891b2' },
+    { id: 'chartRatioEU', label: '欧洲', active: latest.eu_active, sub: latest.eu_sub, color: '#db2777' },
+    { id: 'chartRatioNAex', label: '北美(除美国)', active: latest.na_ex_us_active, sub: latest.na_ex_us_sub, color: '#d97706' }
+  ];
+  for (const r of regionsCfg) {
+    const el = document.getElementById(r.id);
+    if (el && r.active != null && r.sub != null) {
+      const inactive = r.sub - r.active;
+      const pct = ((r.active / r.sub) * 100).toFixed(1);
+      charts['ratio_' + r.id] = new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['活跃用户', '非活跃订阅'],
+          datasets: [{
+            data: [r.active, inactive],
+            backgroundColor: [r.color, '#e2e6ed'],
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: {
+            legend: { display: false },
+            tooltip: chartDefaults.plugins.tooltip,
+            // Center label plugin (via title)
+          }
+        },
+        plugins: [{
+          id: 'centerText',
+          afterDraw(chart) {
+            const { ctx, width, height } = chart;
+            ctx.save();
+            ctx.font = '600 13px Noto Sans SC';
+            ctx.fillStyle = '#1a2332';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(r.label, width / 2, height / 2 - 2);
+            ctx.font = '700 18px JetBrains Mono';
+            ctx.fillStyle = r.color;
+            ctx.textBaseline = 'top';
+            ctx.fillText(pct + '%', width / 2, height / 2 + 2);
+            ctx.restore();
+          }
+        }]
+      });
+    }
   }
 
   // Active Pie
