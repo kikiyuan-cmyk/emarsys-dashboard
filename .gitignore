@@ -1,0 +1,4 @@
+preview_*.png
+nul
+*.pyc
+__pycache__/
