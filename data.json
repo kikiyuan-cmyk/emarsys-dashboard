@@ -1790,7 +1790,7 @@
     "apac_sub": 2293265,
     "na_sub": 9221078,
     "eu_sub": 4201347,
-    "na_ex_us_sub": 262982,
+    "na_ex_us_sub": 441830,
     "leads": 3749170,
     "inactive_lead": 21170509,
     "apac_active": 1259485,
@@ -1830,13 +1830,13 @@
     "apac_sub": 2297323,
     "na_sub": 9229024,
     "eu_sub": 4207329,
-    "na_ex_us_sub": 262862,
+    "na_ex_us_sub": 442707,
     "leads": 3756654,
     "inactive_lead": 21183841,
     "apac_active": 1261238,
     "na_active": 4182517,
     "eu_active": 2818396,
-    "na_ex_us_active": 262861,
+    "na_ex_us_active": 272035,
     "global_active": 9267131
   }
 ]
