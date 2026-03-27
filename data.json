@@ -1818,5 +1818,25 @@
     "eu_active": 2818396,
     "na_ex_us_active": 272035,
     "global_active": 9267131
+  },
+  {
+    "date": "2026-03-27",
+    "total_contacts": null,
+    "available_by_email": null,
+    "unavailable_by_email": null,
+    "no_opt_in": null,
+    "invalid_email": null,
+    "missing_email": null,
+    "apac_sub": 2298149,
+    "na_sub": 9234662,
+    "eu_sub": 4209220,
+    "na_ex_us_sub": 442539,
+    "leads": null,
+    "inactive_lead": 21220742,
+    "apac_active": 1260782,
+    "na_active": 4184539,
+    "eu_active": 2819348,
+    "na_ex_us_active": 262654,
+    "global_active": 9287402
   }
 ]
