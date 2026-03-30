@@ -1,4 +1,6 @@
 preview_*.png
+test_*.png
+t[0-9]_*.png
 nul
 *.pyc
 __pycache__/
