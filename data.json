@@ -1828,15 +1828,15 @@
     "invalid_email": null,
     "missing_email": null,
     "apac_sub": 2308593,
-    "na_sub": 8818303,
-    "eu_sub": 4225021,
-    "na_ex_us_sub": 444019,
+    "na_sub": 8818547,
+    "eu_sub": 4225075,
+    "na_ex_us_sub": 443857,
     "leads": 3826512,
-    "inactive_lead": 21280344,
-    "apac_active": 1222527,
-    "na_active": 3836403,
-    "eu_active": 2826549,
+    "inactive_lead": 21294915,
+    "apac_active": 1223389,
+    "na_active": 3836456,
+    "eu_active": 2757801,
     "na_ex_us_active": 250168,
-    "global_active": 8805335
+    "global_active": 8806554
   }
 ]
