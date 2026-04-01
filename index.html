@@ -675,32 +675,51 @@ function render() {
 
   const main = document.getElementById('mainContent');
 
+  // Helper: find latest record that has a non-null value for a key
+  function latestWith(key) {
+    for (let i = filteredData.length - 1; i >= 0; i--) {
+      if (filteredData[i][key] != null) return filteredData[i];
+    }
+    return null;
+  }
+
+  const emailRec = latestWith('available_by_email');
+  const activeRec = latestWith('global_active');
+  const leadsRec = latestWith('leads');
+  const inactiveRec = latestWith('inactive_lead');
+
   const changeEmail = calcPeriodChange(filteredData, 'available_by_email');
   const changeActive = calcPeriodChange(filteredData, 'global_active');
   const changeLeads = calcPeriodChange(filteredData, 'leads');
   const changeInactive = calcPeriodChange(filteredData, 'inactive_lead');
+
+  // Date tag: show if data date differs from latest date
+  function dateTag(rec) {
+    if (!rec || rec.date === latest.date) return '';
+    return `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">(${rec.date.slice(5)})</span>`;
+  }
 
   main.innerHTML = `
     <!-- KPI -->
     <div class="kpi-grid fade-in" style="animation-delay:0.05s">
       <div class="kpi-card blue">
         <div class="kpi-label">全球订阅人数 (Available by Email)</div>
-        <div class="kpi-value">${fmt(latest.available_by_email)}</div>
+        <div class="kpi-value">${fmt(emailRec ? emailRec.available_by_email : null)}${dateTag(emailRec)}</div>
         ${changeEmail ? `<span class="kpi-change ${changeEmail.up ? 'up' : 'down'}">${changeEmail.up ? '&#9650;' : '&#9660;'} ${changeEmail.pct}%</span><span class="kpi-change-label">区间变化</span>` : ''}
       </div>
       <div class="kpi-card emerald">
         <div class="kpi-label">全球活跃用户</div>
-        <div class="kpi-value">${fmt(latest.global_active)}</div>
+        <div class="kpi-value">${fmt(activeRec ? activeRec.global_active : null)}${dateTag(activeRec)}</div>
         ${changeActive ? `<span class="kpi-change ${changeActive.up ? 'up' : 'down'}">${changeActive.up ? '&#9650;' : '&#9660;'} ${changeActive.pct}%</span><span class="kpi-change-label">区间变化</span>` : ''}
       </div>
       <div class="kpi-card amber">
         <div class="kpi-label">全球潜在用户 (Leads)</div>
-        <div class="kpi-value">${fmt(latest.leads)}</div>
+        <div class="kpi-value">${fmt(leadsRec ? leadsRec.leads : null)}${dateTag(leadsRec)}</div>
         ${changeLeads ? `<span class="kpi-change ${changeLeads.up ? 'up' : 'down'}">${changeLeads.up ? '&#9650;' : '&#9660;'} ${changeLeads.pct}%</span><span class="kpi-change-label">区间变化</span>` : ''}
       </div>
       <div class="kpi-card rose">
         <div class="kpi-label">全球沉默用户 (Inactive Lead)</div>
-        <div class="kpi-value">${fmt(latest.inactive_lead)}</div>
+        <div class="kpi-value">${fmt(inactiveRec ? inactiveRec.inactive_lead : null)}${dateTag(inactiveRec)}</div>
         ${changeInactive ? `<span class="kpi-change ${changeInactive.up ? 'down' : 'up'}">${changeInactive.up ? '&#9650;' : '&#9660;'} ${changeInactive.pct}%</span><span class="kpi-change-label">区间变化</span>` : ''}
       </div>
     </div>
