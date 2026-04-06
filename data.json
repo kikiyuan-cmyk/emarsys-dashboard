@@ -1827,16 +1827,16 @@
     "no_opt_in": null,
     "invalid_email": null,
     "missing_email": null,
-    "apac_sub": 2316601,
-    "na_sub": 8844192,
-    "eu_sub": 4241651,
-    "na_ex_us_sub": 445256,
+    "apac_sub": 2320066,
+    "na_sub": 8844440,
+    "eu_sub": 4242035,
+    "na_ex_us_sub": 445258,
     "leads": 3866758,
-    "inactive_lead": 21352238,
-    "apac_active": 1229446,
-    "na_active": 3845816,
-    "eu_active": 2766793,
-    "na_ex_us_active": 251004,
-    "global_active": 8836767
+    "inactive_lead": 21367385,
+    "apac_active": 1229515,
+    "na_active": 3848591,
+    "eu_active": 2766947,
+    "na_ex_us_active": 251005,
+    "global_active": 8843568
   }
 ]
