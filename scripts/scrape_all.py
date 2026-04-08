@@ -340,8 +340,19 @@ def main():
 
     # === Step 1: Global subscriber history ===
     log("\n[Step 1] Contact Database Growth (90 days)...")
-    with sync_playwright() as p:
-        global_history = scrape_global_history(p)
+    global_history = []
+    try:
+        with sync_playwright() as p:
+            global_history = scrape_global_history(p)
+    except Exception as e:
+        log(f"  Step 1 failed: {e}")
+        log("  Continuing with existing data...")
+        # Load previous global history from data.json
+        if os.path.exists(DATA_JSON):
+            with open(DATA_JSON, "r", encoding="utf-8") as f:
+                old = json.load(f)
+            global_history = [d for d in old if d.get("available_by_email") is not None]
+            log(f"  Loaded {len(global_history)} records from existing data.json")
 
     # === Step 2: Segments (each with independent login) ===
     log(f"\n[Step 2] Segments ({len(SEGMENTS) + 2} items, independent logins)...")
