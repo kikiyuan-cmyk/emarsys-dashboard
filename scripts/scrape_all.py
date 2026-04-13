@@ -550,6 +550,15 @@ def main():
 
     sc = sum(1 for d in data if d.get("apac_sub") is not None)
     log(f"  data.json: {len(data)} records, {sc} with segment, {data[0]['date']}~{data[-1]['date']}")
+
+    # Exit with error if any fields still missing — triggers GitHub notification email
+    if final_missing:
+        log(f"\n  ERROR: {len(final_missing)} fields failed after all retries: {final_missing}")
+        log("  GitHub will send a failure notification email.")
+        log("  Please manually check Emarsys and re-run the workflow.")
+        # Still save partial data (already written above), but exit with error
+        sys.exit(1)
+
     log("\nDone!")
 
 

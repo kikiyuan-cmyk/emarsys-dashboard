@@ -27,6 +27,8 @@ jobs:
         run: pip install playwright && playwright install chromium --with-deps
 
       - name: Run scraper
+        id: scraper
+        continue-on-error: true
         env:
           EMARSYS_ACCOUNT: ${{ secrets.EMARSYS_ACCOUNT }}
           EMARSYS_USERNAME: ${{ secrets.EMARSYS_USERNAME }}
@@ -39,3 +41,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
           git diff --cached --quiet || (git commit -m "data: auto update $(date +%Y-%m-%d)" && git push)
+
+      - name: Fail if scraper had missing fields
+        if: steps.scraper.outcome == 'failure'
+        run: |
+          echo "Scraper exited with error — some fields may be missing. Check logs above."
+          exit 1
