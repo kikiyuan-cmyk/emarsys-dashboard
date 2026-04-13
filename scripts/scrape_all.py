@@ -424,6 +424,69 @@ def main():
     collected = len([k for k in segment_data if k != "date"])
     log(f"  Collected {collected}/12 fields")
 
+    # === Step 2.5: Verify & Retry failed fields ===
+    ALL_FIELDS = {
+        "apac_sub": ("Auto-APAC-All", "segment"),
+        "na_sub": ("Auto-NA 北美周会用", "segment"),
+        "eu_sub": ("Auto-EU-All", "segment"),
+        "na_ex_us_sub": ("Auto-PR/CA", "prca"),
+        "leads": ("Leads", "leads"),
+        "inactive_lead": ("Inactive lead", "segment"),
+        "apac_active": ("Auto-APAC-Active", "segment"),
+        "na_active": ("Auto-NA-Active", "segment"),
+        "eu_active": ("Auto-EU-Active", "segment"),
+        "na_ex_us_active": ("Auto-PR/CA-Active", "segment"),
+        "global_active": ("13 months Auto-All", "segment"),
+    }
+
+    MAX_RETRIES = 2
+    for retry_round in range(1, MAX_RETRIES + 1):
+        missing = [k for k in ALL_FIELDS if k not in segment_data]
+        if not missing:
+            break
+        log(f"\n[Retry {retry_round}/{MAX_RETRIES}] {len(missing)} fields missing: {missing}")
+
+        with sync_playwright() as p:
+            for key in missing:
+                seg_name, seg_type = ALL_FIELDS[key]
+                log(f"  Retry [{seg_name}]")
+                try:
+                    browser = p.chromium.launch(headless=True)
+                    ctx = browser.new_context(viewport={"width": 1920, "height": 1080})
+                    page = ctx.new_page()
+                    t0 = time.time()
+                    url = emarsys_login(page)
+
+                    if seg_type == "segment":
+                        go_segments(page, url)
+                        v = calc_segment(page, seg_name)
+                    elif seg_type == "prca":
+                        go_segments(page, url)
+                        v = calc_prca(page)
+                    elif seg_type == "leads":
+                        v = scrape_leads(page, url)
+                    else:
+                        v = None
+
+                    elapsed = int(time.time() - t0)
+                    if v:
+                        segment_data[key] = v
+                        log(f"    -> {v:,} ({elapsed}s)")
+                    else:
+                        log(f"    -> FAILED again ({elapsed}s)")
+                    browser.close()
+                except Exception as e:
+                    log(f"    -> ERROR: {e}")
+                    try: browser.close()
+                    except: pass
+
+    # Final report
+    final_collected = len([k for k in segment_data if k != "date"])
+    final_missing = [k for k in ALL_FIELDS if k not in segment_data]
+    log(f"\n  Final: {final_collected}/12 fields collected")
+    if final_missing:
+        log(f"  Still missing: {final_missing}")
+
     # === Step 3: Build data.json ===
     log("\n[Step 3] Building data.json...")
 
@@ -439,8 +502,8 @@ def main():
                     "apac_active", "na_active", "eu_active", "na_ex_us_active", "global_active"
                 ] if d.get(k) is not None}
 
-    # Add today
-    if collected > 5:
+    # Add today (save even if partial, as long as we have at least 1 field)
+    if final_collected > 0:
         segs[TODAY] = {k: v for k, v in segment_data.items() if k != "date"}
 
     # Build
