@@ -439,17 +439,30 @@ def main():
         "global_active": ("13 months Auto-All", "segment"),
     }
 
-    MAX_RETRIES = 2
-    for retry_round in range(1, MAX_RETRIES + 1):
+    MAX_ATTEMPTS_PER_FIELD = 5
+    attempt_count = {}  # track attempts per field
+    retry_round = 0
+
+    while True:
         missing = [k for k in ALL_FIELDS if k not in segment_data]
         if not missing:
             break
-        log(f"\n[Retry {retry_round}/{MAX_RETRIES}] {len(missing)} fields missing: {missing}")
+
+        # Check if all missing fields have exhausted their attempts
+        all_exhausted = all(attempt_count.get(k, 0) >= MAX_ATTEMPTS_PER_FIELD for k in missing)
+        if all_exhausted:
+            log(f"\n  {len(missing)} fields failed after {MAX_ATTEMPTS_PER_FIELD} attempts each: {missing}")
+            break
+
+        retry_round += 1
+        retryable = [k for k in missing if attempt_count.get(k, 0) < MAX_ATTEMPTS_PER_FIELD]
+        log(f"\n[Retry round {retry_round}] {len(retryable)} fields to retry: {retryable}")
 
         with sync_playwright() as p:
-            for key in missing:
+            for key in retryable:
+                attempt_count[key] = attempt_count.get(key, 0) + 1
                 seg_name, seg_type = ALL_FIELDS[key]
-                log(f"  Retry [{seg_name}]")
+                log(f"  Retry [{seg_name}] (attempt {attempt_count[key]}/{MAX_ATTEMPTS_PER_FIELD})")
                 try:
                     browser = p.chromium.launch(headless=True)
                     ctx = browser.new_context(viewport={"width": 1920, "height": 1080})
@@ -473,7 +486,7 @@ def main():
                         segment_data[key] = v
                         log(f"    -> {v:,} ({elapsed}s)")
                     else:
-                        log(f"    -> FAILED again ({elapsed}s)")
+                        log(f"    -> FAILED ({elapsed}s)")
                     browser.close()
                 except Exception as e:
                     log(f"    -> ERROR: {e}")
